@@ -17,9 +17,9 @@ CLA_ALL_LIB = \
 CLA_INC = -I$(CLA_DIR)/INCLUDE
 
 INC = -I/usr/local/include
-LIB = -lgsl -lgslcblas -lm -lpthread -lgomp
+LIB = -lm -lpthread -lgomp
 
-CFLAGS = -Wall -O2 -fstack-protector-all
+CFLAGS = -Wall -O2 
 
 all: eig-clapack.c
 	$(CC) $(CFLAGS) -o a.out eig-clapack.c ${CLA_INC} ${CLA_ALL_LIB} ${INC} ${LIB}

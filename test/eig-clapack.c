@@ -1,10 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
-
-// GSL 
-#include<gsl/gsl_rng.h>
-#include<gsl/gsl_randist.h>
-#include<gsl/gsl_statistics.h>
 
 #ifndef MKL
 #  include <f2c.h>
@@ -13,8 +9,6 @@
 #  define integer long int
 #  define doublereal double
 #endif
-
-#include<blaswrap.h>
 
 // CLAPACK を使う．
 //  see http://www.netlib.org/clapack/clapack.h
@@ -25,12 +19,12 @@
 integer eigenvalues( integer n, doublereal *a, doublereal *wr, doublereal *wi ) {
     /* LAPACK の _dgeev() を使って固有値（だけ）を求める */
 
-    integer n3 = 3 * n;
+    integer n3 =  3 * n;
     integer info; 
 
-    doublereal *vl = (doublereal *)calloc(sizeof(doublereal), n * n);
-    doublereal *vr = (doublereal *)calloc(sizeof(doublereal), n * n);
-    doublereal *work = (doublereal *)calloc(sizeof(doublereal), n3);
+    doublereal *vl = (doublereal *)malloc(sizeof(doublereal)* n * n );
+    doublereal *vr = (doublereal *)malloc(sizeof(doublereal)* n * n );
+    doublereal *work = (doublereal *)malloc(sizeof(doublereal)* n3);
 
     (void) dgeev_(
             /* char *jobvl */      "N",  /* "N" なので左固有ベクトルを計算しない */
@@ -89,28 +83,73 @@ integer eigenvalues_rightvectors( integer n, doublereal *a, doublereal *wr, doub
     return info;
 }
 
+int isDeclimited(char c, char del){
+    if(c == del){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
+int isNumber(char c){
+    if( ('0' <= c && c <= '9') || (c == '+' || c == '-') ){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
+#define BUF_SIZE 256
+
+double dReadDataElem(FILE* fp){
+    char tmp, token[BUF_SIZE];
+    int i = 0;
+    token[0] = '\0';
+    tmp = fgetc(fp);
+    if( isNumber(tmp) ){
+        token[i++] = tmp;
+    }
+    while( !feof( fp ) ){
+        if( isDeclimited(tmp = fgetc(fp), ' ') ) break;
+        token[i++] = tmp;
+        if(i > BUF_SIZE){
+            printf("too long");
+            token[0] = '\0';
+            return 0;
+        } 
+    }
+    token[i] = '\0';
+    return atof(token);
+}
+
+double* ReadMat(const char *fname, double* mat, int row, int col){
+    int i, j;
+    FILE* fp = fopen(fname, "rb"); 
+	if (fp == NULL) { 
+		printf("file open error!\n");
+        mat = NULL;
+		return NULL;
+	}
+    for( i=0; i<row; i++ ){
+        for( j=0; j<col; j++ ){
+            double tmp = dReadDataElem( fp );
+            printf("%lf ", tmp);
+            mat[i + row*j] = tmp;
+        }
+        printf("\n");
+    }
+    return mat;
+}
+
 int main( int argc, char **argv ) {
     int i; 
-    integer n = 14; /* 正方行列の次数 */
-    doublereal *a  = (doublereal *)calloc(sizeof(doublereal), n * n); 
-    doublereal *wr = (doublereal *)calloc(sizeof(doublereal), n); 
-    doublereal *wi = (doublereal *)calloc(sizeof(doublereal), n);  
-    doublereal *vr = (doublereal *)calloc(sizeof(doublereal), n * n);
+    integer n = 20; /* 正方行列の次数 */
+    doublereal *a  = (doublereal *)malloc(sizeof(doublereal)* n * n ); 
+    doublereal *wr = (doublereal *)malloc(sizeof(doublereal)* n ); 
+    doublereal *wi = (doublereal *)malloc(sizeof(doublereal)* n );  
+    doublereal *vr = (doublereal *)malloc(sizeof(doublereal)* n * n );
 
-    printf("num %d \n", malloc_usable_size(a));
-
-    // ここからは，GSL の機能を使って，乱数を配列 a に格納
-    gsl_rng_env_setup();
-    gsl_rng_type *T = (gsl_rng_type *)gsl_rng_default;
-    /* 乱数発生器 */
-    gsl_rng *r = gsl_rng_alloc(T);
-    /* システムクロックを使って乱数の初期値を設定 */
-    gsl_rng_set (r, time (NULL));
-    
-    for(i = 0; i < (n * n); i++) {
-        a[i] =  gsl_rng_uniform(r);  
-    }
-    gsl_rng_free(r);
+    ReadMat("x.dat", a, n, n);
 
     /* クロック開始 */
     printf( "start, \n" );
