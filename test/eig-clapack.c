@@ -75,7 +75,7 @@ integer eigenvalues_rightvectors( integer n, doublereal *a, doublereal *wr, doub
             /* doublereal *work, */ work, /* 作業用 */
             /* integer *lwork, */  &n4,   /* 作業用の行列の次元 */
             /* integer *info */    &info);
-    
+
     free( work ); 
     free( vl ); 
 
@@ -133,43 +133,50 @@ double* ReadMat(const char *fname, double* mat, int row, int col){
     for( i=0; i<row; i++ ){
         for( j=0; j<col; j++ ){
             double tmp = dReadDataElem( fp );
-            printf("%lf ", tmp);
+            // printf("%lf ", tmp);
             mat[i + row*j] = tmp;
         }
-        printf("\n");
+        // printf("\n");
     }
     return mat;
 }
 
 int main( int argc, char **argv ) {
-    int i; 
+    int i, j; 
     integer n = 20; /* 正方行列の次数 */
-    doublereal *a  = (doublereal *)malloc(sizeof(doublereal)* n * n ); 
-    doublereal *wr = (doublereal *)malloc(sizeof(doublereal)* n ); 
-    doublereal *wi = (doublereal *)malloc(sizeof(doublereal)* n );  
-    doublereal *vr = (doublereal *)malloc(sizeof(doublereal)* n * n );
 
-    ReadMat("x.dat", a, n, n);
+    double sum = 0;
+    int test_time = 1;
+    for(j = 0; j < test_time; j++){
+        doublereal *a  = (doublereal *)malloc(sizeof(doublereal)* n * n ); 
+        doublereal *wr = (doublereal *)malloc(sizeof(doublereal)* n ); 
+        doublereal *wi = (doublereal *)malloc(sizeof(doublereal)* n );  
+        // doublereal *vr = (doublereal *)malloc(sizeof(doublereal)* n * n );
 
-    /* クロック開始 */
-    printf( "start, \n" );
-    clock_t c = clock();
+        ReadMat("x.dat", a, n, n);
+        /* クロック開始 */
+        printf( "start, \n" );
+        clock_t c = clock();
 
-    // 固有値. 実部が wr, 虚部が wi
-    eigenvalues( n, a, wr, wi ); 
-    // eigenvalues_rightvectors( n, a, wr, wi, vr ); 
+        // 固有値. 実部が wr, 虚部が wi
+        eigenvalues( n, a, wr, wi ); 
+        // eigenvalues_rightvectors( n, a, wr, wi, vr ); 
 
-    /* （オプション）確認出力 */
-    for(i = 0; i < n; i++) {
-      printf("%5d %15.7e %15.7e\n", i + 1, *(wr + i), *(wi + i));
+        /* （オプション）確認出力 */
+        for(i = 0; i < n; i++) {
+          printf("%5d %15.7e %15.7e\n", i + 1, *(wr + i), *(wi + i));
+        }
+
+        /* クロック終了 */
+        double time = ( (double)clock() - (double)c ) / CLOCKS_PER_SEC;
+        printf( "done, elapsed time = %f [sec]\n", time );
+        sum += time;
+
+        free(wi);
+        free(wr);
+        free(a);
     }
-
-    /* クロック終了 */
-    printf( "done, elapsed time = %f [sec]\n", ( (double)clock() - (double)c ) / CLOCKS_PER_SEC );
-
-    free(wi);
-    free(wr);
-    free(a);
+    printf( "elapsed average time = %f [sec]\n", sum / test_time );
 
     return 0;
 }
